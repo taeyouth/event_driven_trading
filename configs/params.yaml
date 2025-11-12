@@ -21,6 +21,38 @@ weights:
   embedding_similarity: 1.0
   virality: 1.0
   source_trust: 1.0
+  relevance:
+    name_hit: 1.0
+    brand_hit: 0.8
+    title_keyword: 0.5
+    summary_keyword: 0.2
+    salience_boost: 0.2
+
+weights:
+  polarity:
+    positive_kws: ["수주", "계약", "호재", "증설", "수혜", "완화", "지원 확대", "실적 개선", "배당 확대"]
+    negative_kws: ["악재", "감산", "규제 강화", "리콜", "적자", "부진", "소송", "경고", "제재"]
+
+  impact:
+    # event_type 가중치(없으면 1.0으로 처리)
+    policy: 1.2
+    industry: 1.1
+    celebrity_comment: 1.05
+    collaboration: 1.1
+    other: 1.0
+    salience_weight: 0.5     # salience 반영 비율
+    novelty_weight: 0.5      # novelty 반영 비율
+
+  confidence:
+    source_trust:
+      # feed_name 또는 source 기준의 신뢰도(0~1). 없으면 0.5로 처리
+      default: 0.5
+    time_decay_minutes: 180   # 이벤트 기준 신뢰도 감쇠 시작 시점(분)
+    min_confidence: 0.2       # 바닥값
+
+topn:
+  relevance: 10   # 관련도 Top N_R
+
 
 risk:
   max_pos_per_ticker: 0.05

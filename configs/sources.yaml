@@ -1,8 +1,35 @@
 rss:
-  - name: econ_feed_1
-    url: "https://example.com/rss/economy.xml"
-  - name: policy_feed_1
-    url: "https://example.com/rss/policy.xml"
+  # 정책/정부
+  - name: korea_policy_briefing_all
+    url: "https://www.korea.kr/etc/rss.do"   # 대한민국 정책브리핑 RSS 모음
+  - name: mois_press
+    url: "https://www.mois.go.kr/gpms/view/jsp/rss/rss.jsp?ctxCd=1012"  # 행정안전부 보도자료
+  - name: fsc_press
+    url: "https://www.fsc.go.kr/ut060101"    # 금융위원회 RSS 안내 페이지(세부 피드는 안내 페이지 통해 선택)
+
+  # 경제/증권 매체
+  - name: hankyung_economy
+    url: "https://www.hankyung.com/feed/economy"
+  - name: hankyung_finance
+    url: "https://www.hankyung.com/feed/finance"
+  - name: mk_economy
+    url: "https://www.mk.co.kr/rss/30100041/"
+  - name: mk_allnews
+    url: "https://www.mk.co.kr/rss/40300001/"
+  - name: etoday_all
+    url: "https://www.etoday.co.kr/rss/"
+
+  # 방송(옵션)
+  - name: mbn_money_economy
+    url: "https://mbnmoney.mbn.co.kr/rss/tv/program/10004"
+
+  # 공시
+  # DART는 '최근공시'·'회사별' 화면에서 RSS 주소를 제공하므로, 사용하실 리스트(회사/섹터)별로 추가하세요.
+  # 예시: 최근공시(주소는 DART 화면에서 RSS 버튼으로 복사)
+  # - name: dart_recent
+  #   url: "<DART_최근공시_RSS_URL>"
+
+
 
 sns:
   - name: x_keywords
@@ -12,10 +39,12 @@ market:
   vendor: "placeholder"  # 예: kis, quandl 등 (나중에 결정)
 
 aliases:
-  # 산업/브랜드/자회사/파트너 등 엔티티 사전(초안)
   005930:
-    names: ["삼성전자", "Samsung Electronics"]
-    brands: ["갤럭시", "Exynos"]
+    names: ["삼성전자", "Samsung Electronics", "삼전"]
+    brands: ["갤럭시", "Exynos", "GDDR", "HBM"]
   000660:
-    names: ["SK하이닉스", "SK hynix"]
-    brands: []
+    names: ["SK하이닉스", "SK hynix", "하이닉스"]
+    brands: ["HBM", "DDR5"]
+  035420:
+    names: ["NAVER", "네이버"]
+    brands: ["라인", "클로바"]
