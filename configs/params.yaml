@@ -1,0 +1,28 @@
+topn:
+  relevance: 10
+  volume: 10
+
+windows:
+  baseline_days: 5
+  post_minutes: 60
+
+thresholds:
+  buy_score: 0.7
+  volume_uplift: 0.5
+  abn_volume_z: 2.0
+
+weights:
+  event_type:
+    policy: 1.2
+    industry: 1.1
+    celebrity_comment: 1.1
+    collaboration: 1.1
+  alias_match: 1.0
+  embedding_similarity: 1.0
+  virality: 1.0
+  source_trust: 1.0
+
+risk:
+  max_pos_per_ticker: 0.05
+  max_pos_total: 0.3
+  halt_flags: true

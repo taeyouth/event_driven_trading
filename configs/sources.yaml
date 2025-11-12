@@ -1,0 +1,21 @@
+rss:
+  - name: econ_feed_1
+    url: "https://example.com/rss/economy.xml"
+  - name: policy_feed_1
+    url: "https://example.com/rss/policy.xml"
+
+sns:
+  - name: x_keywords
+    query: ["반도체", "규제 완화", "콜라보", "금리 인하"]
+
+market:
+  vendor: "placeholder"  # 예: kis, quandl 등 (나중에 결정)
+
+aliases:
+  # 산업/브랜드/자회사/파트너 등 엔티티 사전(초안)
+  005930:
+    names: ["삼성전자", "Samsung Electronics"]
+    brands: ["갤럭시", "Exynos"]
+  000660:
+    names: ["SK하이닉스", "SK hynix"]
+    brands: []
