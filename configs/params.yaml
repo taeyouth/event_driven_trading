@@ -27,6 +27,19 @@ weights:
     title_keyword: 0.5
     summary_keyword: 0.2
     salience_boost: 0.2
+  signal:
+    w_base: 0.50     # 이벤트 자체 신호(base_signal) 비중
+    w_rel:  0.30     # 관련도 랭킹 점수 비중
+    w_vol:  0.20     # 거래량 반응 점수 비중
+    w_mix:  0.00     # (옵션) 상호작용항 비중 (초기 0)
+  thresholds:
+    buy_score_buy:   0.70   # 매수
+    buy_score_watch: 0.50   # 관망(워치리스트)
+    require_positive_base: true  # base_signal이 음수면 강제 관망/제외
+
+  topn:
+    relevance: 10    # 기존 값 유지
+    volume: 10       # 기존 값 유지
 
 weights:
   polarity:
