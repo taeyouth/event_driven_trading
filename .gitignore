@@ -14,3 +14,6 @@ configs/credentials/
 
 # Jupyter
 .ipynb_checkpoints/
+
+
+echo "project_code_context.txt" >> .gitignore

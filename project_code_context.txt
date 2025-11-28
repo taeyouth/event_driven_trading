@@ -1,0 +1,1907 @@
+
+==============================
+FILE PATH: .\cgi.py
+==============================
+
+# cgi.py (Python 3.13 임시 호환용 더미)
+import urllib.parse as _parse
+
+def parse_header(line):
+    """feedparser 호환용 간단한 cgi.parse_header 대체"""
+    parts = line.split(";")
+    key = parts[0].strip().lower()
+    pdict = {}
+    for p in parts[1:]:
+        if "=" in p:
+            k, v = p.strip().split("=", 1)
+            pdict[k.lower()] = v.strip('"')
+    return key, pdict
+
+
+==============================
+FILE PATH: .\temp_check.py
+==============================
+
+import os
+
+# 1. 내용을 읽고 싶은 파일 확장자 설정
+TARGET_EXTENSIONS = ['.py', '.yaml', '.json', '.sh']
+# 2. 제외하고 싶은 폴더 설정
+IGNORE_DIRS = {'.git', '__pycache__', 'venv', 'env', '.idea', 'data', 'logs'}
+
+def merge_files(output_file="project_code_context.txt"):
+    with open(output_file, "w", encoding="utf-8") as outfile:
+        # 현재 폴더부터 하위 폴더까지 탐색
+        for root, dirs, files in os.walk("."):
+            # 제외할 폴더 필터링
+            dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+            
+            for file in files:
+                if any(file.endswith(ext) for ext in TARGET_EXTENSIONS):
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as infile:
+                            outfile.write(f"\n{'='*30}\n")
+                            outfile.write(f"FILE PATH: {file_path}\n")
+                            outfile.write(f"{'='*30}\n\n")
+                            outfile.write(infile.read())
+                            outfile.write("\n")
+                    except Exception as e:
+                        print(f"Skipping {file_path}: {e}")
+
+    print(f"✅ 완료! '{output_file}' 파일이 생성되었습니다. 이 파일의 내용을 AI에게 붙여넣으세요.")
+
+if __name__ == "__main__":
+    merge_files()
+
+==============================
+FILE PATH: .\configs\params.yaml
+==============================
+
+topn:
+  relevance: 10
+  volume: 10
+
+windows:
+  baseline_days: 5
+  post_minutes: 60
+
+thresholds:
+  buy_score: 0.7
+  volume_uplift: 0.5
+  abn_volume_z: 2.0
+
+weights:
+  event_type:
+    policy: 1.2
+    industry: 1.1
+    celebrity_comment: 1.1
+    collaboration: 1.1
+  alias_match: 1.0
+  embedding_similarity: 1.0
+  virality: 1.0
+  source_trust: 1.0
+  relevance:
+    name_hit: 1.0
+    brand_hit: 0.8
+    title_keyword: 0.5
+    summary_keyword: 0.2
+    salience_boost: 0.2
+  signal:
+    w_base: 0.50     # 이벤트 자체 신호(base_signal) 비중
+    w_rel:  0.30     # 관련도 랭킹 점수 비중
+    w_vol:  0.20     # 거래량 반응 점수 비중
+    w_mix:  0.00     # (옵션) 상호작용항 비중 (초기 0)
+  thresholds:
+    buy_score_buy:   0.70   # 매수
+    buy_score_watch: 0.50   # 관망(워치리스트)
+    require_positive_base: true  # base_signal이 음수면 강제 관망/제외
+
+  topn:
+    relevance: 10    # 기존 값 유지
+    volume: 10       # 기존 값 유지
+
+weights:
+  polarity:
+    positive_kws: ["수주", "계약", "호재", "증설", "수혜", "완화", "지원 확대", "실적 개선", "배당 확대"]
+    negative_kws: ["악재", "감산", "규제 강화", "리콜", "적자", "부진", "소송", "경고", "제재"]
+
+  impact:
+    # event_type 가중치(없으면 1.0으로 처리)
+    policy: 1.2
+    industry: 1.1
+    celebrity_comment: 1.05
+    collaboration: 1.1
+    other: 1.0
+    salience_weight: 0.5     # salience 반영 비율
+    novelty_weight: 0.5      # novelty 반영 비율
+
+  confidence:
+    source_trust:
+      # feed_name 또는 source 기준의 신뢰도(0~1). 없으면 0.5로 처리
+      default: 0.5
+    time_decay_minutes: 180   # 이벤트 기준 신뢰도 감쇠 시작 시점(분)
+    min_confidence: 0.2       # 바닥값
+
+topn:
+  relevance: 10   # 관련도 Top N_R
+
+
+risk:
+  max_pos_per_ticker: 0.05
+  max_pos_total: 0.3
+  halt_flags: true
+
+
+==============================
+FILE PATH: .\configs\sources.yaml
+==============================
+
+rss:
+  # 정책/정부
+  - name: korea_policy_briefing_all
+    url: "https://www.korea.kr/etc/rss.do"   # 대한민국 정책브리핑 RSS 모음
+  - name: mois_press
+    url: "https://www.mois.go.kr/gpms/view/jsp/rss/rss.jsp?ctxCd=1012"  # 행정안전부 보도자료
+  - name: fsc_press
+    url: "https://www.fsc.go.kr/ut060101"    # 금융위원회 RSS 안내 페이지(세부 피드는 안내 페이지 통해 선택)
+
+  # 경제/증권 매체
+  - name: hankyung_economy
+    url: "https://www.hankyung.com/feed/economy"
+  - name: hankyung_finance
+    url: "https://www.hankyung.com/feed/finance"
+  - name: mk_economy
+    url: "https://www.mk.co.kr/rss/30100041/"
+  - name: mk_allnews
+    url: "https://www.mk.co.kr/rss/40300001/"
+  - name: etoday_all
+    url: "https://www.etoday.co.kr/rss/"
+
+  # 방송(옵션)
+  - name: mbn_money_economy
+    url: "https://mbnmoney.mbn.co.kr/rss/tv/program/10004"
+
+  # 공시
+  # DART는 '최근공시'·'회사별' 화면에서 RSS 주소를 제공하므로, 사용하실 리스트(회사/섹터)별로 추가하세요.
+  # 예시: 최근공시(주소는 DART 화면에서 RSS 버튼으로 복사)
+  # - name: dart_recent
+  #   url: "<DART_최근공시_RSS_URL>"
+
+
+
+sns:
+  - name: x_keywords
+    query: ["반도체", "규제 완화", "콜라보", "금리 인하"]
+
+market:
+  vendor: "placeholder"  # 예: kis, quandl 등 (나중에 결정)
+
+aliases:
+  005930:
+    names: ["삼성전자", "Samsung Electronics", "삼전"]
+    brands: ["갤럭시", "Exynos", "GDDR", "HBM"]
+  000660:
+    names: ["SK하이닉스", "SK hynix", "하이닉스"]
+    brands: ["HBM", "DDR5"]
+  035420:
+    names: ["NAVER", "네이버"]
+    brands: ["라인", "클로바"]
+
+
+==============================
+FILE PATH: .\configs\__init__.py
+==============================
+
+
+
+==============================
+FILE PATH: .\scripts\run_poc_batch.py
+==============================
+
+# scripts/run_poc_batch.py
+# 최소 엔트리포인트: 설정 로드, 로거 초기화, 디렉터리 준비 확인
+
+from pathlib import Path
+from src.common.config import load_config
+from src.common.logging import setup_logger
+from src.common.constants import (
+    REPO_ROOT, DATA_DIR, RAW_DIR, PROCESSED_DIR, REPORTS_DIR, LOGS_DIR,
+    PARAMS_YAML, SOURCES_YAML, ENV_FILE
+)
+
+def ensure_dirs():
+    for d in [DATA_DIR, RAW_DIR, PROCESSED_DIR, REPORTS_DIR, LOGS_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
+def main():
+    logger = setup_logger("poc")
+    cfg = load_config()
+
+    logger.info("=== POC batch start ===")
+    logger.info(f"ENV={cfg.env}")
+    logger.info(f"PARAMS_YAML exists: {PARAMS_YAML.exists()}")
+    logger.info(f"SOURCES_YAML exists: {SOURCES_YAML.exists()}")
+    logger.info(f".env exists: {ENV_FILE.exists()}")
+
+    ensure_dirs()
+    for p in [DATA_DIR, RAW_DIR, PROCESSED_DIR, REPORTS_DIR, LOGS_DIR]:
+        logger.info(f"dir ready: {p}")
+
+    logger.info("=== POC batch end (no-op) ===")
+
+if __name__ == "__main__":
+    main()
+
+
+==============================
+FILE PATH: .\scripts\run_ranking_topn.py
+==============================
+
+# ./run_ranking_topn.py
+
+from src.ranking.topn_signals import (
+    load_signals,
+    attach_krx_master,
+    select_topn,
+    export_results,
+)
+
+
+def main():
+    signals_path = "data/processed/signals.parquet"
+    krx_master_path = "data/krx/krx_master.csv"
+
+    final_csv_path = "data/processed/final_signals.csv"
+    final_parquet_path = "data/processed/final_signals.parquet"
+
+    top_n = 5  # 이벤트별 상위 N개
+
+    print(f"[INFO] Loading signals from: {signals_path}")
+    signals_df = load_signals(signals_path)
+
+    print(f"[INFO] Fetching & attaching KRX master to signals")
+    signals_with_name = attach_krx_master(
+        signals_df,
+        krx_path=krx_master_path,
+        krx_encoding="utf-8",
+    )
+
+    print(f"[INFO] Selecting top-{top_n} per event (relevance & volume)")
+    final_df = select_topn(
+        signals_with_name,
+        top_n=top_n,
+        relevance_col="relevance_score",
+        volume_col="volume_uplift",
+        event_col="event_id",
+    )
+
+    export_results(
+        final_df,
+        csv_path=final_csv_path,
+        parquet_path=final_parquet_path,
+    )
+
+    print("[INFO] Done.")
+
+
+if __name__ == "__main__":
+    main()
+
+
+==============================
+FILE PATH: .\src\__init__.py
+==============================
+
+
+
+==============================
+FILE PATH: .\src\common\config.py
+==============================
+
+"""
+설정 로더
+- .env (선택) + YAML(params/sources) 로딩
+- 외부 라이브러리 최소화: PyYAML 권장
+"""
+
+import os
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
+try:
+    from dotenv import load_dotenv  # 선택 설치: python-dotenv
+    _HAS_DOTENV = True
+except Exception:
+    _HAS_DOTENV = False
+
+try:
+    import yaml  # 설치 필요: PyYAML
+except Exception as e:
+    raise ImportError("PyYAML 미설치: `pip install PyYAML` 후 재시도하세요") from e
+
+from .constants import PARAMS_YAML, SOURCES_YAML, ENV_FILE
+
+@dataclass
+class AppConfig:
+    env: str
+    params: Dict[str, Any]
+    sources: Dict[str, Any]
+
+def _load_env() -> None:
+    # .env 는 있으면 읽고, 없으면 건너뜀
+    if _HAS_DOTENV and ENV_FILE.exists():
+        load_dotenv(ENV_FILE)
+
+def _load_yaml(path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+def load_config() -> AppConfig:
+    _load_env()
+    app_env = os.getenv("APP_ENV", "LOCAL")
+
+    params = _load_yaml(PARAMS_YAML)
+    sources = _load_yaml(SOURCES_YAML)
+
+    return AppConfig(
+        env=app_env,
+        params=params,
+        sources=sources
+    )
+
+
+==============================
+FILE PATH: .\src\common\constants.py
+==============================
+
+"""
+공통 상수 정의
+- 경로/파일명 등 하드코딩 상수 모아두는 곳
+"""
+
+from pathlib import Path
+
+# 레포 루트 기준
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# 데이터/로그 디렉터리 (gitignore 대상)
+DATA_DIR = REPO_ROOT / "data"
+RAW_DIR = DATA_DIR / "raw"
+PROCESSED_DIR = DATA_DIR / "processed"
+REPORTS_DIR = DATA_DIR / "reports"
+
+LOGS_DIR = REPO_ROOT / "logs"
+
+# 설정 파일 경로
+CONFIGS_DIR = REPO_ROOT / "configs"
+PARAMS_YAML = CONFIGS_DIR / "params.yaml"
+SOURCES_YAML = CONFIGS_DIR / "sources.yaml"
+ENV_FILE = REPO_ROOT / ".env"
+
+# 기본 파일명(POC 산출물)
+EVENTS_FILE = PROCESSED_DIR / "events.parquet"
+MAPPING_FILE = PROCESSED_DIR / "mapping.parquet"
+RANKINGS_FILE = PROCESSED_DIR / "rankings.parquet"
+SIGNALS_FILE = PROCESSED_DIR / "signals.parquet"
+
+
+==============================
+FILE PATH: .\src\common\logging.py
+==============================
+
+"""
+로깅 설정 유틸
+- 콘솔 + 파일 핸들러(회전) 세팅
+"""
+
+import logging
+from logging.handlers import RotatingFileHandler
+from .constants import LOGS_DIR
+
+def setup_logger(name: str = "app", level: int = logging.INFO) -> logging.Logger:
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # 중복 핸들러 방지
+    if logger.handlers:
+        return logger
+
+    # 콘솔
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    ))
+
+    # 파일(회전)
+    fh = RotatingFileHandler(
+        LOGS_DIR / f"{name}.log",
+        maxBytes=5 * 1024 * 1024,  # 5MB
+        backupCount=3,
+        encoding="utf-8"
+    )
+    fh.setLevel(level)
+    fh.setFormatter(logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    ))
+
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+    logger.propagate = False
+    return logger
+
+
+==============================
+FILE PATH: .\src\common\__init__.py
+==============================
+
+
+
+==============================
+FILE PATH: .\src\eventing\event_features.py
+==============================
+
+# src/eventing/event_features.py
+# 목적:
+# - 정규화된 이벤트 파일(events.parquet)을 불러와
+#   특징치(salience/novelty 등)를 재계산하거나 추가 지표를 부여
+#   (이번 단계에선 event_normalizer와 동일 로직을 함수화만 해둠)
+
+from __future__ import annotations
+import pandas as pd
+from src.common.logging import setup_logger
+from src.common.constants import EVENTS_FILE
+
+def recompute_features() -> None:
+    logger = setup_logger("eventing")
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 가 없습니다. 먼저 event_normalizer 를 실행하세요.")
+        return
+
+    df = pd.read_parquet(EVENTS_FILE)
+    # 필요 시 향후 추가 특징치 계산 위치
+    # ex) df["some_feature"] = ...
+    df.to_parquet(EVENTS_FILE, index=False)
+    logger.info(f"events features recomputed -> {EVENTS_FILE} (rows={len(df)})")
+
+if __name__ == "__main__":
+    recompute_features()
+
+
+==============================
+FILE PATH: .\src\eventing\event_normalizer.py
+==============================
+
+# src/eventing/event_normalizer.py
+# 목적:
+# - data/raw/rss_*.csv (가장 최근 파일 1개) 정규화
+# - 중복 제거(id/link 기준)
+# - 간단한 이벤트 타입 분류(정책/유명인/콜라보/산업/기타)
+# - salience/novelty의 1차 지표(가벼운 룰 기반)
+# - 결과를 data/processed/events.parquet 로 저장
+
+from __future__ import annotations
+from pathlib import Path
+from typing import List, Dict
+import re
+import hashlib
+from datetime import datetime
+import pandas as pd
+
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import RAW_DIR, PROCESSED_DIR, EVENTS_FILE
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 1) 유틸
+# ──────────────────────────────────────────────────────────────────────────────
+def _latest_raw_csv() -> Path | None:
+    files = sorted(RAW_DIR.glob("rss_*.csv"))
+    return files[-1] if files else None
+
+def _gen_event_id(row: Dict[str, str]) -> str:
+    # id가 있으면 우선 사용하고, 없으면 title+link로 해시 생성
+    base = row.get("id") or f"{row.get('title','')}|{row.get('link','')}"
+    return hashlib.sha256(base.encode("utf-8")).hexdigest()[:24]
+
+def _parse_ts(ts: str) -> pd.Timestamp | None:
+    # RSS published 문자열을 pandas에서 최대한 파싱
+    ts = ts.replace(" KST", "+09:00")
+    if not ts:
+        return None
+    try:
+        return pd.to_datetime(ts, utc=True, errors="coerce")
+    except Exception:
+        return None
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 2) 간단한 이벤트 타입 분류 룰
+#    - 가벼운 사전 + 키워드 매칭(POC 1차)
+#    - params.yaml에 override 키워드가 있으면 합칩니다(없으면 기본만)
+# ──────────────────────────────────────────────────────────────────────────────
+DEFAULT_RULES = {
+    "policy": [
+        "정책", "규제", "완화", "정부", "보도자료", "금융위원회", "공정거래위원회", "관세", "관보", "지원 확대"
+    ],
+    "celebrity_comment": [
+        "발언", "코멘트", "견해", "트윗", "인터뷰", "유명", "인플루언서", "거물", "빌리어네어", "대주주"
+    ],
+    "collaboration": [
+        "콜라보", "협업", "제휴", "파트너십", "MOU", "공동", "협력", "공동개발"
+    ],
+    "industry": [
+        "산업", "업계", "공급망", "수출", "수입", "생산", "라인", "증설", "감산", "출시", "신제품"
+    ]
+}
+
+def _merge_rules(cfg_rules: Dict) -> Dict:
+    rules = {k: set(v) for k, v in DEFAULT_RULES.items()}
+    if cfg_rules:
+        for k, arr in cfg_rules.items():
+            rules.setdefault(k, set()).update(arr or [])
+    return {k: sorted(v) for k, v in rules.items()}
+
+def _classify_event_type(title: str, summary: str, rules: Dict[str, List[str]]) -> str:
+    text = f"{title} {summary}"
+    text = text.lower()
+    for etype, kws in rules.items():
+        for kw in kws:
+            if kw.lower() in text:
+                return etype
+    return "other"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 3) 간단 특징치: salience / novelty
+#    - salience: 제목·요약에서 '강조 키워드' 출현 수를 간단 가중치로 환산 (0~1 스케일)
+#    - novelty: 동일 제목·링크가 이미 존재하면 0, 아니면 1
+#      (향후: 유사도 기반으로 확장 가능)
+# ──────────────────────────────────────────────────────────────────────────────
+EMPHASIS_KWS = [
+    "긴급", "속보", "전격", "대규모", "확대", "중단", "폐지", "인하", "인상",
+    "완화", "강화", "수혜", "악재", "호재", "수주", "계약", "출시"
+]
+
+def _salience_score(title: str, summary: str) -> float:
+    text = f"{title} {summary}"
+    count = 0
+    for kw in EMPHASIS_KWS:
+        count += text.count(kw)
+    # 단순 스케일(상한 1.0)
+    return min(count / 3.0, 1.0)
+
+def _novelty_flag(df: pd.DataFrame) -> pd.Series:
+    # 동일 제목 또는 동일 링크가 있으면 0, 아니면 1
+    dup_title = df["title"].duplicated(keep="first")
+    dup_link = df["link"].duplicated(keep="first")
+    nov = (~(dup_title | dup_link)).astype(int)
+    return nov
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 4) 메인
+# ──────────────────────────────────────────────────────────────────────────────
+def run() -> None:
+    logger = setup_logger("eventing")
+    cfg = load_config()
+
+    latest = _latest_raw_csv()
+    if latest is None:
+        logger.warning("data/raw/rss_*.csv 가 없습니다. 먼저 RSS 수집을 실행하세요.")
+        return
+
+    logger.info(f"load raw: {latest.name}")
+    df = pd.read_csv(latest)
+
+    # 필드 보정(비어 있으면 빈 문자열)
+    for col in ["id", "title", "link", "published", "summary", "source", "feed_name"]:
+        if col not in df.columns:
+            df[col] = ""
+        df[col] = df[col].fillna("").astype(str)
+
+    # published 파싱
+    df["published_ts"] = df["published"].apply(_parse_ts)
+
+    # 중복 제거 (id나 link 기준)
+    df["_key"] = df["id"].where(df["id"].str.len() > 0, df["link"])
+    before = len(df)
+    df = df.drop_duplicates(subset=["_key"], keep="first").copy()
+    after = len(df)
+    if before != after:
+        logger.info(f"dedup by id/link: {before} -> {after}")
+
+    # 이벤트 id 생성
+    df["event_id"] = df.apply(lambda r: _gen_event_id(r.to_dict()), axis=1)
+
+    # 이벤트 유형 룰 머지(params.yaml > rules.event_types.*)
+    cfg_rules = (((cfg.params or {}).get("rules") or {}).get("event_types")) if cfg and cfg.params else None
+    rules = _merge_rules(cfg_rules)
+
+    # 타입 분류
+    df["event_type"] = df.apply(
+        lambda r: _classify_event_type(r["title"], r["summary"], rules), axis=1
+    )
+
+    # 특징치 1차
+    df["salience"] = df.apply(lambda r: _salience_score(r["title"], r["summary"]), axis=1)
+    df["novelty"] = _novelty_flag(df)
+
+    # 컬럼 정리(표준 스키마)
+    cols = [
+        "event_id", "published_ts", "event_type",
+        "title", "summary", "link", "source", "feed_name",
+        "salience", "novelty"
+    ]
+    out = df[cols].sort_values("published_ts", na_position="last").reset_index(drop=True)
+
+    # 저장
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(EVENTS_FILE, index=False)
+    logger.info(f"events -> {EVENTS_FILE} (rows={len(out)})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\ingestion\marketdata_ingestor.py
+==============================
+
+# src/ingestion/marketdata_ingestor.py
+# 목적:
+# - data/raw/market/*.csv 파일들을 읽어 표준 스키마로 정규화 후
+#   분봉으로 집계하여 data/processed/market.parquet 로 저장
+#
+# 입력 CSV 유연 스키마(자동 인식):
+#   [티커 후보]   : ticker, symbol, 종목코드, 코드
+#   [시각 후보]   : ts, timestamp, datetime, time, 거래시각, 체결시각, 일시, 날짜시간
+#                   (date+time 컬럼이 분리돼 있어도 자동 결합)
+#   [거래량 후보] : volume, 거래량, 체결량
+#   [가격 후보]   : price, close, 체결가, 종가, 현재가 (있으면 보존)
+#
+# 실행:
+#   python -m src.ingestion.marketdata_ingestor
+#
+# 요구사항:
+#   - pandas
+#   - pyarrow (parquet 저장용)
+#   - tzdata (Windows에서 권장: Asia/Seoul 타임존 처리)
+#
+from __future__ import annotations
+from pathlib import Path
+from typing import List, Optional, Tuple
+import pandas as pd
+import numpy as np
+
+from src.common.logging import setup_logger
+from src.common.constants import RAW_DIR, PROCESSED_DIR
+
+OUT_PATH = PROCESSED_DIR / "market.parquet"
+
+# 후보 컬럼명 사전  ─────────────────────────────────────────────────────────────
+TICKER_CANDIDATES = ["ticker", "symbol", "종목코드", "코드"]
+TS_CANDIDATES      = ["ts", "timestamp", "datetime", "time", "거래시각", "체결시각", "일시", "날짜시간"]
+DATE_CANDIDATES    = ["date", "날짜", "일자"]
+TIME_CANDIDATES    = ["time", "시간", "시각"]
+VOLUME_CANDIDATES  = ["volume", "거래량", "체결량"]
+PRICE_CANDIDATES   = ["price", "close", "체결가", "종가", "현재가"]
+
+def _list_raw_csvs() -> List[Path]:
+    p = RAW_DIR / "market"
+    return sorted(p.glob("*.csv")) if p.exists() else []
+
+def _find_first(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
+    cols = {c.lower(): c for c in df.columns}
+    for k in candidates:
+        if k.lower() in cols:
+            return cols[k.lower()]
+    return None
+
+def _resolve_columns(df: pd.DataFrame) -> Tuple[str, str, str, Optional[str]]:
+    """티커/시각/거래량/가격 컬럼명 자동 탐지. 가격은 Optional."""
+    ticker_col = _find_first(df, TICKER_CANDIDATES)
+    ts_col     = _find_first(df, TS_CANDIDATES)
+    vol_col    = _find_first(df, VOLUME_CANDIDATES)
+    price_col  = _find_first(df, PRICE_CANDIDATES)
+
+    # ### 변경: date+time 분리 컬럼을 ts로 결합 지원
+    if ts_col is None:
+        dcol = _find_first(df, DATE_CANDIDATES)
+        tcol = _find_first(df, TIME_CANDIDATES)
+        if dcol and tcol:
+            ts_col = "__tmp_ts__"
+            df[ts_col] = df[dcol].astype(str).str.strip() + " " + df[tcol].astype(str).str.strip()
+
+    missing = []
+    if ticker_col is None: missing.append("ticker(예: ticker/symbol/종목코드/코드)")
+    if ts_col is None:     missing.append("ts(예: ts/timestamp/datetime/거래시각/체결시각/일시)")
+    if vol_col is None:    missing.append("volume(예: volume/거래량/체결량)")
+    if missing:
+        raise ValueError("필수 컬럼이 없습니다: " + ", ".join(missing))
+
+    return ticker_col, ts_col, vol_col, price_col
+
+def _parse_ts_series(s: pd.Series) -> pd.Series:
+    """문자열 시각 → UTC 분 단위 Timestamp.
+       - 'KST' 같은 약어가 들어와도 최대한 파싱 후 Asia/Seoul 로컬라이즈 → UTC 변환
+       - tz 정보가 없으면 Asia/Seoul 가정(운영 환경이 한국 시장이므로)
+    """
+    # ### 변경: 광범위한 문자열 파싱 후 타임존 처리
+    ts = pd.to_datetime(s, errors="coerce", utc=False)
+    # tz가 없는 naive는 KST로 가정 → UTC 변환
+    try:
+        # pandas >= 1.4: zoneinfo 사용 가능, Windows는 tzdata 설치 권장
+        ts = ts.dt.tz_localize("Asia/Seoul", nonexistent="shift_forward", ambiguous="NaT", errors="coerce")
+    except Exception:
+        # 이미 tz-aware인 값은 통과를 시도
+        try:
+            if ts.dt.tz is None:
+                ts = ts.dt.tz_localize("Asia/Seoul", errors="coerce")
+        except Exception:
+            pass
+    # UTC로 통일
+    try:
+        ts = ts.dt.tz_convert("UTC")
+    except Exception:
+        # tz 없는 일부는 그대로 UTC 가정
+        ts = pd.to_datetime(s, errors="coerce", utc=True)
+    return ts.dt.floor("min")
+
+def _read_one(path: Path) -> pd.DataFrame:
+    df = pd.read_csv(path)
+    ticker_col, ts_col, vol_col, price_col = _resolve_columns(df)
+
+    # 타입/정규화
+    df[ticker_col] = df[ticker_col].astype(str).str.strip()
+    df[vol_col] = pd.to_numeric(df[vol_col], errors="coerce").fillna(0)
+
+    ts = _parse_ts_series(df[ts_col].astype(str))
+    df = df.loc[ts.notna()].copy()
+    df["ts"] = ts[ts.notna()]
+
+    # 표준 스키마로 리턴
+    out_cols = ["ticker", "ts", "volume"]
+    df_out = pd.DataFrame({
+        "ticker": df[ticker_col].values,
+        "ts": df["ts"].values,
+        "volume": df[vol_col].values.astype(float),
+    })
+
+    # 가격 보존(있을 때만)
+    if price_col:
+        df_out["price"] = pd.to_numeric(df[price_col], errors="coerce")
+
+    return df_out
+
+def run() -> None:
+    logger = setup_logger("ingestion")
+    csvs = _list_raw_csvs()
+    if not csvs:
+        logger.warning("data/raw/market/*.csv 가 없습니다. 최소 한 개의 CSV를 추가하세요.")
+        return
+
+    parts = []
+    for p in csvs:
+        try:
+            dfp = _read_one(p)
+            parts.append(dfp)
+            logger.info(f"[ok] {p.name} loaded | rows={len(dfp)}")
+        except Exception as e:
+            logger.exception(f"[skip] {p.name}: {e}")
+
+    if not parts:
+        logger.warning("유효한 시장 데이터가 없습니다.")
+        return
+
+    df = pd.concat(parts, ignore_index=True)
+    # 분봉 집계 (ticker, ts)
+    agg = df.groupby(["ticker", "ts"], as_index=False).agg(volume=("volume", "sum"))
+
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    agg.to_parquet(OUT_PATH, index=False)
+    logger.info(f"market -> {OUT_PATH} (rows={len(agg)}, tickers={agg['ticker'].nunique()})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\ingestion\rss_ingestor.py
+==============================
+
+# src/ingestion/rss_ingestor.py
+# 목적: configs/sources.yaml의 rss 소스들을 읽어 제목/링크/발행시각 등을 수집해 data/raw/에 CSV로 저장
+
+from typing import List, Dict, Any
+from datetime import datetime
+import csv
+import feedparser
+
+from src.common.config import load_config
+from src.common.logging import setup_logger
+from src.common.constants import RAW_DIR
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 내부 유틸
+# ──────────────────────────────────────────────────────────────────────────────
+def _parse_entry(e: Any, feed_name: str) -> Dict[str, str]:
+    """RSS 엔트리에서 안전하게 필드를 추출"""
+    # RSS마다 지원 필드가 달라서 getattr로 방어적으로 접근
+    entry_id = getattr(e, "id", "") or getattr(e, "guid", "") or getattr(e, "link", "")
+    published = getattr(e, "published", "") or getattr(e, "updated", "") or ""
+    source_title = ""
+    try:
+        source_title = getattr(getattr(e, "source", None), "title", "") or ""
+    except Exception:
+        source_title = ""
+
+    return {
+        "id": entry_id,
+        "title": getattr(e, "title", "") or "",
+        "link": getattr(e, "link", "") or "",
+        "published": published,
+        "summary": getattr(e, "summary", "") or "",
+        "source": source_title,
+        "feed_name": feed_name,
+    }
+
+def _dedup_by_id(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """id 기준 중복 제거 (id가 비어있으면 link로 대체)"""
+    seen = set()
+    out = []
+    for r in rows:
+        key = r["id"] or r["link"]
+        if key and key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+def _dump_csv(rows: List[Dict[str, str]]) -> str:
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = RAW_DIR / f"rss_{ts}.csv"
+
+    # 필드 고정(일부 엔트리가 비어 있어도 헤더 안정화)
+    fieldnames = ["id", "title", "link", "published", "summary", "source", "feed_name"]
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in fieldnames})
+    return str(path)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 메인 함수
+# ──────────────────────────────────────────────────────────────────────────────
+def run() -> None:
+    """
+    configs/sources.yaml 의 rss 리스트를 읽어 들여 배치 수집을 수행.
+    결과는 data/raw/rss_YYYYMMDD_HHMMSS.csv 로 저장.
+    """
+    logger = setup_logger("ingestion")
+    cfg = load_config()
+
+    rss_list = cfg.sources.get("rss", [])
+    if not rss_list:
+        logger.warning("sources.yaml -> rss 리스트가 비어 있습니다.")
+        return
+
+    logger.info(f"rss sources: {len(rss_list)}")
+
+    collected: List[Dict[str, str]] = []
+    for src in rss_list:
+        url = (src or {}).get("url")
+        name = (src or {}).get("name", "unknown_rss")
+        if not url:
+            logger.warning(f"[skip] name={name} url 없음")
+            continue
+
+        try:
+            feed = feedparser.parse(url)
+            n = 0
+            for e in getattr(feed, "entries", []):
+                row = _parse_entry(e, name)
+                # 제목/링크 둘 다 비어 있으면 의미가 없으니 스킵
+                if not row["title"] and not row["link"]:
+                    continue
+                collected.append(row)
+                n += 1
+            logger.info(f"[ok] {name}: {n} entries")
+        except Exception as ex:
+            logger.exception(f"[fail] {name}: {url} / {ex}")
+
+    # 중복 제거
+    before = len(collected)
+    collected = _dedup_by_id(collected)
+    after = len(collected)
+    if before != after:
+        logger.info(f"dedup: {before} -> {after}")
+
+    # 저장
+    out_path = _dump_csv(collected)
+    logger.info(f"rss dump -> {out_path} (rows={len(collected)})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\mapping\entity_linker.py
+==============================
+
+# src/mapping/entity_linker.py
+# 목적:
+# - events.parquet 과 configs/sources.yaml의 aliases 사전을 사용해
+#   제목/요약 내 키워드 매칭 기반의 이벤트↔티커 매핑 생성
+# - 룰기반 relevance_score 산출
+# - 결과를 data/processed/mapping.parquet 로 저장
+#
+# 설계 포인트:
+# - 한국어/영문을 모두 소문자 비교 (간단 정규화)
+# - names, brands 모두 매칭 대상
+# - title/summary 내 등장 여부, salience를 가중합
+# - features를 JSON 문자열로 함께 저장(사후 분석/튜닝용)
+
+from __future__ import annotations
+import json
+from typing import Dict, List, Any
+import re
+import pandas as pd
+
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import EVENTS_FILE, PROCESSED_DIR, MAPPING_FILE
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 텍스트 정규화(가벼운 버전)
+# ──────────────────────────────────────────────────────────────────────────────
+def _norm(s: str) -> str:
+    if not isinstance(s, str):
+        return ""
+    s = s.strip().lower()
+    # 필요 시 기초 치환(특수문자 단순화)
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+def _contains_any(text: str, keys: List[str]) -> int:
+    """keys 중 하나라도 부분문자열로 존재하면 1, 없으면 0"""
+    text = _norm(text)
+    for k in keys:
+        kk = _norm(k)
+        if kk and kk in text:
+            return 1
+    return 0
+
+def _count_in(text: str, keys: List[str]) -> int:
+    """keys의 총 출현 횟수(대략치)"""
+    text = _norm(text)
+    cnt = 0
+    for k in keys:
+        kk = _norm(k)
+        if not kk:
+            continue
+        cnt += text.count(kk)
+    return cnt
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 스코어 계산
+# ──────────────────────────────────────────────────────────────────────────────
+def _get_rel_weights(cfg) -> Dict[str, float]:
+    # params.yaml → weights.relevance.*
+    w = (((cfg.params or {}).get("weights") or {}).get("relevance") or {})
+    return {
+        "name_hit": float(w.get("name_hit", 1.0)),
+        "brand_hit": float(w.get("brand_hit", 0.8)),
+        "title_keyword": float(w.get("title_keyword", 0.5)),
+        "summary_keyword": float(w.get("summary_keyword", 0.2)),
+        "salience_boost": float(w.get("salience_boost", 0.2)),
+    }
+
+def _score_row(title: str, summary: str, salience: float,
+               names: List[str], brands: List[str], w: Dict[str, float]) -> Dict[str, Any]:
+    # 기본 히트
+    name_hit_title = _contains_any(title, names)
+    name_hit_summary = _contains_any(summary, names)
+    brand_hit_title = _contains_any(title, brands)
+    brand_hit_summary = _contains_any(summary, brands)
+
+    # 키워드 카운트(다수 등장 시 가중)
+    name_count_title = _count_in(title, names)
+    brand_count_title = _count_in(title, brands)
+    name_count_summary = _count_in(summary, names)
+    brand_count_summary = _count_in(summary, brands)
+
+    # 스코어: 히트 여부와 카운트를 모두 반영
+    # (간단 가중합; 필요 시 min/max로 클리핑)
+    score = 0.0
+    score += w["name_hit"] * (name_hit_title or name_hit_summary)
+    score += w["brand_hit"] * (brand_hit_title or brand_hit_summary)
+    score += w["title_keyword"] * (name_count_title + brand_count_title)
+    score += w["summary_keyword"] * (name_count_summary + brand_count_summary)
+
+    # salience 보너스(이벤트 자체 중요도)
+    score += w["salience_boost"] * float(salience or 0.0)
+
+    # 정규화/상한(선형 상한 5.0 → 0~1 스케일로 예시)
+    max_raw = 5.0
+    norm_score = min(score / max_raw, 1.0)
+
+    features = {
+        "name_hit": int((name_hit_title or name_hit_summary) > 0),
+        "brand_hit": int((brand_hit_title or brand_hit_summary) > 0),
+        "name_count_title": int(name_count_title),
+        "brand_count_title": int(brand_count_title),
+        "name_count_summary": int(name_count_summary),
+        "brand_count_summary": int(brand_count_summary),
+        "salience": float(salience or 0.0),
+        "raw_score": float(score),
+        "norm_score": float(norm_score),
+    }
+    return {"score": norm_score, "features": features}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 메인
+# ──────────────────────────────────────────────────────────────────────────────
+def run() -> None:
+    logger = setup_logger("mapping")
+    cfg = load_config()
+
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 이 없습니다. 먼저 event_normalizer를 실행하세요.")
+        return
+
+    df = pd.read_parquet(EVENTS_FILE)
+    if df.empty:
+        logger.info("events.parquet 이 비어있습니다.")
+        return
+
+    aliases = (cfg.sources or {}).get("aliases") or {}
+    if not aliases:
+        logger.warning("sources.yaml 의 aliases 가 비어 있습니다. 매핑이 생성되지 않습니다.")
+        return
+
+    w = _get_rel_weights(cfg)
+
+    # 표준 스키마 컬럼 보장
+    for c in ["event_id", "title", "summary", "salience"]:
+        if c not in df.columns:
+            df[c] = "" if c in ("title", "summary") else 0.0
+
+    rows_out = []
+    for _, r in df.iterrows():
+        title = r["title"] or ""
+        summary = r["summary"] or ""
+        salience = float(r.get("salience", 0.0) or 0.0)
+        event_id = r["event_id"]
+
+        for tkr, ent in aliases.items():
+            names = (ent or {}).get("names") or []
+            brands = (ent or {}).get("brands") or []
+            if not names and not brands:
+                continue
+            result = _score_row(title, summary, salience, names, brands, w)
+            score = result["score"]
+            if score <= 0.0:
+                continue  # 완전 0점은 스킵(튜닝 가능)
+
+            rows_out.append({
+                "event_id": event_id,
+                "ticker": str(tkr),
+                "relevance_score": float(score),
+                "features": json.dumps(result["features"], ensure_ascii=False),
+            })
+
+    if not rows_out:
+        logger.info("생성된 매핑 결과가 없습니다. aliases 확장 또는 weights 조정이 필요합니다.")
+        return
+
+    out = pd.DataFrame(rows_out).sort_values(
+        ["event_id", "relevance_score"], ascending=[True, False]
+    )
+
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(MAPPING_FILE, index=False)
+    logger.info(f"mapping -> {MAPPING_FILE} (rows={len(out)}, events={out['event_id'].nunique()})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\ranking\krx_master.py
+==============================
+
+# ./src/ranking/krx_master.py
+
+import requests
+import pandas as pd
+from io import BytesIO
+from pathlib import Path
+
+
+def _find_column(df: pd.DataFrame, candidates: list[str], logical_name: str) -> str:
+    """
+    DataFrame에서 후보 컬럼명 리스트 중 실제로 존재하는 첫 번째 컬럼명을 찾는다.
+    없으면 에러 발생.
+    """
+    for col in candidates:
+        if col in df.columns:
+            return col
+
+    raise KeyError(
+        f"[KRX 마스터] {logical_name}에 해당하는 컬럼을 찾지 못했습니다.\n"
+        f"  logical_name = {logical_name}\n"
+        f"  candidates   = {candidates}\n"
+        f"  actual cols  = {list(df.columns)}"
+    )
+
+
+def fetch_krx_master(
+    save_path: str = "data/krx/krx_master.csv",
+    encoding: str = "cp949",
+):
+    """
+    KRX 상장종목 전체 마스터 파일을 다운로드하여
+    ticker(6자리) + name 컬럼으로 저장한다.
+
+    반환:
+      - DataFrame (컬럼: ticker, name)
+    """
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # OTP 생성 URL
+    gen_url = "http://data.krx.co.kr/comm/fileDn/GenerateOTP/generate.cmd"
+    gen_params = {
+        "mktId": "ALL",
+        "share": "1",
+        "csvxls_isNo": "false",
+        "name": "fileDown",
+        "url": "dbms/MDC/STAT/standard/MDCSTAT01901",
+    }
+    headers = {
+        "Referer": "http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201020101",
+        "User-Agent": "Mozilla/5.0",
+    }
+
+    # 1) OTP 코드 요청
+    r1 = requests.get(gen_url, params=gen_params, headers=headers)
+    r1.raise_for_status()
+    otp = r1.content.decode()
+
+    # 2) 실제 다운로드 요청
+    down_url = "http://data.krx.co.kr/comm/fileDn/download_csv/download.cmd"
+    r2 = requests.post(down_url, data={"code": otp}, headers=headers)
+    r2.raise_for_status()
+    r2.encoding = encoding
+
+    # 3) DataFrame으로 변환
+    df_raw = pd.read_csv(BytesIO(r2.content), encoding=encoding)
+    print("[KRX 마스터] 원본 컬럼 목록:", list(df_raw.columns))
+
+    # 4) 종목명/티커 컬럼 자동 매핑
+    name_col_candidates = ["종목명", "한글 종목명", "한글명", "표준종목명"]
+    ticker_col_candidates = ["단축코드", "종목코드", "단축 종목코드"]
+
+    name_col = _find_column(df_raw, name_col_candidates, logical_name="name")
+    ticker_col = _find_column(df_raw, ticker_col_candidates, logical_name="ticker")
+
+    df = df_raw[[name_col, ticker_col]].rename(
+        columns={name_col: "name", ticker_col: "ticker"}
+    )
+
+    # 5) ticker 앞자리 0 채우기 → 6자리
+    df["ticker"] = df["ticker"].astype(str).str.zfill(6)
+
+    # 6) 중복 제거 / 정렬
+    df = df.drop_duplicates(subset=["ticker"])
+    df = df.sort_values("ticker").reset_index(drop=True)
+
+    # 7) 저장
+    df.to_csv(save_path, index=False, encoding="utf-8")
+    print(f"[KRX 마스터] Saved to {save_path}, rows = {len(df)}")
+
+    return df
+
+
+==============================
+FILE PATH: .\src\ranking\ranking_topn.py
+==============================
+
+# ranking_topn.py
+
+import pyarrow.parquet as pq
+import pandas as pd
+
+from krx_master import fetch_krx_master
+
+def load_signals(parquet_path: str) -> pd.DataFrame:
+    table = pq.read_table(parquet_path)
+    df = table.to_pandas()
+    return df
+
+def preprocess_signals(df: pd.DataFrame, krx_master_path: str = "krx_master.csv") -> pd.DataFrame:
+    # 6자리 ticker 보정
+    df['ticker'] = df['ticker'].astype(str).str.zfill(6)
+
+    # 종목명 매핑
+    master = pd.read_csv(krx_master_path, dtype={'ticker': str})
+    df = df.merge(master, on='ticker', how='left')
+    return df
+
+def select_topn(df: pd.DataFrame, top_n: int = 5) -> pd.DataFrame:
+    # 관련도 랭킹
+    df['rank_relevance'] = df.groupby('event_id')['relevance_score'] \
+                             .rank(method='dense', ascending=False)
+    top_rel = df[df['rank_relevance'] <= top_n].copy()
+    top_rel['type'] = 'relevance'
+
+    # 거래량 상승 랭킹
+    df['rank_volume'] = df.groupby('event_id')['volume_uplift'] \
+                          .rank(method='dense', ascending=False)
+    top_vol = df[df['rank_volume'] <= top_n].copy()
+    top_vol['type'] = 'volume'
+
+    # 병합 및 정리
+    final = pd.concat([top_rel, top_vol], ignore_index=True)
+    final = final.sort_values(['event_id', 'type', 'ticker']).reset_index(drop=True)
+    return final
+
+def export_results(df_final: pd.DataFrame, csv_path: str = "final_signals.csv", parquet_path: str = "final_signals.parquet"):
+    df_final.to_csv(csv_path, index=False, encoding='utf-8')
+    df_final.to_parquet(parquet_path, index=False)
+    print(f"Exported results to {csv_path} and {parquet_path}")
+
+if __name__ == "__main__":
+    # 예시 실행
+    signals_df = load_signals("data/processed/signals.parquet")
+    _ = fetch_krx_master("data/krx_master.csv")
+    prep = preprocess_signals(signals_df, "data/krx_master.csv")
+    final = select_topn(prep, top_n=5)
+    export_results(final, "data/processed/final_signals.csv", "data/processed/final_signals.parquet")
+
+
+==============================
+FILE PATH: .\src\ranking\relevance_topn.py
+==============================
+
+# src/ranking/relevance_topn.py
+# 목적:
+# - mapping.parquet(이벤트↔티커, relevance_score) + events.parquet(base_signal)
+# - 이벤트별 "관련도 Top N_R" 랭킹을 산출하여 data/processed/rankings.parquet 에 저장
+#
+# 실행:
+#   python -m src.ranking.relevance_topn
+
+from __future__ import annotations
+import pandas as pd
+
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import (
+    MAPPING_FILE, EVENTS_FILE, PROCESSED_DIR, RANKINGS_FILE
+)
+
+def run() -> None:
+    logger = setup_logger("ranking")
+    cfg = load_config()
+
+    if not MAPPING_FILE.exists():
+        logger.warning("mapping.parquet 이 없습니다. 먼저 entity_linker를 실행하세요.")
+        return
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 이 없습니다. 먼저 event_normalizer/ scoring을 실행하세요.")
+        return
+
+    mp = pd.read_parquet(MAPPING_FILE)
+    ev = pd.read_parquet(EVENTS_FILE)
+
+    if mp.empty:
+        logger.info("mapping.parquet 이 비어있습니다.")
+        return
+    if "base_signal" not in ev.columns:
+        ev["base_signal"] = 0.0
+
+    # 이벤트 메타(시간/타입/신호) 붙이기
+    cols = ["event_id", "published_ts", "event_type", "base_signal", "salience", "novelty"]
+    evm = ev[cols].drop_duplicates("event_id")
+    df = mp.merge(evm, on="event_id", how="left")
+
+    # 이벤트별 Top N_R
+    N_R = int((((cfg.params or {}).get("topn") or {}).get("relevance", 10)))
+    df["rank_relevance"] = df.groupby("event_id")["relevance_score"].rank("dense", ascending=False)
+
+    top_rel = df[df["rank_relevance"] <= N_R].sort_values(
+        ["event_id", "rank_relevance", "relevance_score"], ascending=[True, True, False]
+    ).reset_index(drop=True)
+
+    # 저장
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    top_rel.to_parquet(RANKINGS_FILE, index=False)
+    logger.info(f"rankings(relevance) -> {RANKINGS_FILE} (rows={len(top_rel)}, events={top_rel['event_id'].nunique()}, N={N_R})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\ranking\topn_signals.py
+==============================
+
+# ./src/ranking/topn_signals.py
+
+from pathlib import Path
+import pyarrow.parquet as pq
+import pandas as pd
+
+from src.ranking.krx_master import fetch_krx_master
+
+
+def load_signals(parquet_path: str) -> pd.DataFrame:
+    """
+    signals.parquet를 읽어서 pandas DataFrame으로 반환.
+    """
+    path = Path(parquet_path)
+    if not path.exists():
+        raise FileNotFoundError(f"signals.parquet 파일을 찾을 수 없습니다: {path}")
+
+    table = pq.read_table(path)
+    df = table.to_pandas()
+    return df
+
+
+def attach_krx_master(
+    signals_df: pd.DataFrame,
+    krx_path: str = "data/krx/krx_master.csv",
+    krx_encoding: str = "utf-8",
+) -> pd.DataFrame:
+    """
+    시그널 데이터에 KRX 종목 마스터를 조인하여 종목명을 붙인다.
+
+    - 실행 시마다 fetch_krx_master를 호출해서 최신 마스터를 받아온다.
+    """
+    # 1) 최신 KRX 마스터 다운로드 + 저장
+    krx_df = fetch_krx_master(save_path=krx_path, encoding="cp949")
+
+    # 2) ticker 6자리 보정
+    df = signals_df.copy()
+    df["ticker"] = df["ticker"].astype(str).str.zfill(6)
+
+    # 3) 조인
+    merged = df.merge(krx_df, on="ticker", how="left")
+
+    missing_name_cnt = merged["name"].isna().sum()
+    if missing_name_cnt > 0:
+        print(f"[WARN] 종목명이 매핑되지 않은 티커 개수: {missing_name_cnt}")
+
+    return merged
+
+
+def select_topn(
+    df_with_name: pd.DataFrame,
+    top_n: int = 5,
+    relevance_col: str = "relevance_score",
+    volume_col: str = "volume_uplift",
+    event_col: str = "event_id",
+) -> pd.DataFrame:
+    """
+    이벤트별로
+      - 관련도 기준 top N
+      - 거래량 상승 기준 top N
+    을 추출하여 하나의 DataFrame으로 반환한다.
+    """
+    df = df_with_name.copy()
+
+    if relevance_col not in df.columns:
+        raise KeyError(f"관련도 컬럼이 없습니다: {relevance_col}")
+    if volume_col not in df.columns:
+        raise KeyError(f"거래량 상승 컬럼이 없습니다: {volume_col}")
+    if event_col not in df.columns:
+        raise KeyError(f"이벤트 컬럼이 없습니다: {event_col}")
+
+    # 관련도 랭킹
+    df["rank_relevance"] = (
+        df.groupby(event_col)[relevance_col]
+        .rank(method="dense", ascending=False)
+    )
+    top_rel = df[df["rank_relevance"] <= top_n].copy()
+    top_rel["signal_type"] = "relevance"
+
+    # 거래량 랭킹
+    df["rank_volume"] = (
+        df.groupby(event_col)[volume_col]
+        .rank(method="dense", ascending=False)
+    )
+    top_vol = df[df["rank_volume"] <= top_n].copy()
+    top_vol["signal_type"] = "volume"
+
+    # 두 결과 병합
+    final = pd.concat([top_rel, top_vol], ignore_index=True)
+
+    final = final.sort_values(
+        by=[event_col, "signal_type", "rank_relevance", "rank_volume"]
+    ).reset_index(drop=True)
+
+    return final
+
+
+def export_results(
+    df_final: pd.DataFrame,
+    csv_path: str = "data/processed/final_signals.csv",
+    parquet_path: str = "data/processed/final_signals.parquet",
+):
+    """
+    최종 결과를 CSV 및 Parquet으로 저장한다.
+    """
+    csv_out = Path(csv_path)
+    parquet_out = Path(parquet_path)
+
+    csv_out.parent.mkdir(parents=True, exist_ok=True)
+
+    df_final.to_csv(csv_out, index=False, encoding="utf-8")
+    df_final.to_parquet(parquet_out, index=False)
+
+    print(f"[INFO] CSV 저장: {csv_out}")
+    print(f"[INFO] Parquet 저장: {parquet_out}")
+
+
+==============================
+FILE PATH: .\src\ranking\volume_topn.py
+==============================
+
+# src/ranking/volume_topn.py  (수정판)
+from __future__ import annotations
+import pandas as pd
+from datetime import timedelta
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import EVENTS_FILE, RANKINGS_FILE, PROCESSED_DIR
+
+MARKET_FILE = PROCESSED_DIR / "market.parquet"
+OUT_FILE = PROCESSED_DIR / "rankings_volume.parquet"
+
+def _ensure_ts_utc(s: pd.Series) -> pd.Series:
+    ts = pd.to_datetime(s, errors="coerce", utc=False)
+    try:
+        # tz-naive는 KST로 간주 후 UTC로 변환
+        ts = ts.dt.tz_localize("Asia/Seoul", nonexistent="shift_forward", ambiguous="NaT", errors="coerce")
+    except Exception:
+        # 이미 tz 있는 경우 그대로 시도
+        pass
+    try:
+        ts = ts.dt.tz_convert("UTC")
+    except Exception:
+        # 마지막 방어
+        ts = pd.to_datetime(s, errors="coerce", utc=True)
+    return ts
+
+def _calc_metrics(mkt: pd.DataFrame, ticker: str, t0: pd.Timestamp,
+                  baseline_days: int, post_minutes: int) -> dict:
+    if pd.isna(t0):
+        return {"baseline_mean": 0.0, "baseline_std": 0.0, "post_mean": 0.0,
+                "volume_uplift": 0.0, "abn_volume_z": 0.0}
+    t0u = pd.Timestamp(t0)
+    if t0u.tzinfo is None:
+        t0u = t0u.tz_localize("UTC")
+    t_start = t0u - timedelta(days=baseline_days)
+    t_end_post = t0u + timedelta(minutes=post_minutes)
+
+    sub = mkt[(mkt["ticker"] == str(ticker)) & (mkt["ts"] >= t_start) & (mkt["ts"] < t_end_post)]
+    if sub.empty:
+        return {"baseline_mean": 0.0, "baseline_std": 0.0, "post_mean": 0.0,
+                "volume_uplift": 0.0, "abn_volume_z": 0.0}
+
+    base = sub[sub["ts"] < t0u]
+    post = sub[sub["ts"] >= t0u]
+    base_mean = float(base["volume"].mean()) if not base.empty else 0.0
+    base_std  = float(base["volume"].std(ddof=1)) if len(base) > 1 else 0.0
+    post_mean = float(post["volume"].mean()) if not post.empty else 0.0
+
+    uplift = (post_mean - base_mean) / (base_mean if base_mean > 0 else 1e-9)
+    z = (post_mean - base_mean) / (base_std if base_std > 0 else 1e-9)
+    return {"baseline_mean": base_mean, "baseline_std": base_std,
+            "post_mean": post_mean, "volume_uplift": float(uplift), "abn_volume_z": float(z)}
+
+def run() -> None:
+    logger = setup_logger("ranking")
+    cfg = load_config()
+
+    if not (PROCESSED_DIR / "market.parquet").exists():
+        logger.warning("market.parquet 이 없습니다. 먼저 marketdata_ingestor 를 실행하세요.")
+        return
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 이 없습니다.")
+        return
+    if not RANKINGS_FILE.exists():
+        logger.warning("rankings.parquet(관련도 TopN_R) 이 없습니다.")
+        return
+
+    mkt = pd.read_parquet(PROCESSED_DIR / "market.parquet")
+    ev  = pd.read_parquet(EVENTS_FILE)
+    rel = pd.read_parquet(RANKINGS_FILE)
+
+    if mkt.empty or rel.empty:
+        logger.warning("입력 데이터가 비어 있습니다.")
+        return
+
+    # 파라미터
+    baseline_days = int((((cfg.params or {}).get("windows") or {}).get("baseline_days", 5)))
+    post_minutes  = int((((cfg.params or {}).get("windows") or {}).get("post_minutes", 60)))
+    N_V           = int((((cfg.params or {}).get("topn") or {}).get("volume", 10)))
+
+    # 1) rel에 published_ts가 이미 있으면 그대로 사용, 없으면 ev에서 머지
+    if "published_ts" in rel.columns:
+        df = rel.copy()
+    else:
+        evm = ev[["event_id", "published_ts"]].drop_duplicates("event_id")
+        df = rel.merge(evm, on="event_id", how="left")
+
+    # 2) 혹시 중복 머지로 suffix가 생겼다면 정리  ← ★★ 수정 포인트
+    if "published_ts" not in df.columns:
+        for cand in ["published_ts_x", "published_ts_y"]:
+            if cand in df.columns:
+                df["published_ts"] = df[cand]
+                break
+
+    # 3) 타입 보정
+    df["published_ts"] = _ensure_ts_utc(df["published_ts"])
+    mkt["ts"] = _ensure_ts_utc(mkt["ts"])
+
+    # 4) 메트릭 계산
+    rows = []
+    for _, r in df.iterrows():
+        metrics = _calc_metrics(mkt, r["ticker"], r["published_ts"], baseline_days, post_minutes)
+        rows.append({**r.to_dict(), **metrics})
+
+    out = pd.DataFrame(rows)
+
+    # 5) 이벤트별 Top N_V 산출
+    out["rank_volume"] = out.groupby("event_id")["volume_uplift"].rank("dense", ascending=False)
+    topv = out.sort_values(
+        ["event_id", "rank_volume", "volume_uplift", "abn_volume_z"],
+        ascending=[True, True, False, False]
+    )
+    topv_final = topv[topv["rank_volume"] <= N_V].reset_index(drop=True)
+
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    topv_final.to_parquet(PROCESSED_DIR / "rankings_volume.parquet", index=False)
+    logger.info(f"rankings(volume) -> {PROCESSED_DIR / 'rankings_volume.parquet'} "
+                f"(rows={len(topv_final)}, events={topv_final['event_id'].nunique()}, N={N_V})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\scoring\basic_scoring.py
+==============================
+
+# src/scoring/basic_scoring.py
+# 목적:
+# - events.parquet 에 polarity(−1~+1), impact_strength(0~1), confidence(0~1), base_signal(−1~+1)을 추가
+# - 간단한 룰/가중치 기반 (params.yaml 활용)
+#
+# 실행:
+#   python -m src.scoring.basic_scoring
+
+from __future__ import annotations
+from typing import Dict, List
+import math
+import pandas as pd
+from datetime import datetime, timezone
+
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import EVENTS_FILE
+
+def _kw_score(text: str, kws: List[str]) -> int:
+    if not isinstance(text, str) or not text:
+        return 0
+    t = text.lower()
+    s = 0
+    for kw in kws or []:
+        if not kw:
+            continue
+        if kw.lower() in t:
+            s += 1
+    return s
+
+def _clip01(x: float) -> float:
+    return max(0.0, min(1.0, float(x)))
+
+def _clip11(x: float) -> float:
+    return max(-1.0, min(1.0, float(x)))
+
+def _polarity(title: str, summary: str, wpol: Dict) -> float:
+    pos = _kw_score(title, wpol.get("positive_kws", [])) + _kw_score(summary, wpol.get("positive_kws", []))
+    neg = _kw_score(title, wpol.get("negative_kws", [])) + _kw_score(summary, wpol.get("negative_kws", []))
+    # 간단 정규화: (pos - neg) / (pos + neg + ε)
+    denom = (pos + neg) if (pos + neg) > 0 else 1.0
+    score = (pos - neg) / denom
+    return _clip11(score)  # −1 ~ +1
+
+def _impact(row: pd.Series, wimp: Dict) -> float:
+    etype = (row.get("event_type") or "other")
+    type_w = float(wimp.get(etype, 1.0))
+    sal_w = float(wimp.get("salience_weight", 0.5))
+    nov_w  = float(wimp.get("novelty_weight", 0.5))
+    sal = float(row.get("salience", 0.0) or 0.0)   # 0~1
+    nov = float(row.get("novelty", 0.0) or 0.0)    # 0/1
+    raw = type_w * (sal_w * sal + nov_w * nov)
+    # 0~1로 간단 스케일 (type_w가 1.2 등일 수 있으므로 1.2 기준으로 클립)
+    return _clip01(raw / 1.2)
+
+def _minutes_since(ts: pd.Timestamp) -> float:
+    if not isinstance(ts, pd.Timestamp) or pd.isna(ts):
+        return 1e9
+    now = datetime.now(timezone.utc)
+    return max(0.0, (now - ts.to_pydatetime()).total_seconds() / 60.0)
+
+def _confidence(row: pd.Series, wconf: Dict) -> float:
+    source_trust_tbl = (wconf.get("source_trust") or {})
+    default_trust = float(source_trust_tbl.get("default", 0.5))
+    # feed_name / source 중 있으면 우선
+    feed = (row.get("feed_name") or "").lower()
+    src  = (row.get("source") or "").lower()
+    trust = float(source_trust_tbl.get(feed, source_trust_tbl.get(src, default_trust)))
+
+    # 시간 감쇠 (신규 이벤트일수록 신뢰↑, 오래될수록 감쇠)
+    tdecay = float(wconf.get("time_decay_minutes", 180))
+    mins = _minutes_since(row.get("published_ts"))
+    time_factor = 1.0 if mins <= 0 else 1.0 / (1.0 + (mins / max(1.0, tdecay)))  # ~ (0,1]
+
+    conf = trust * time_factor
+    conf = max(conf, float(wconf.get("min_confidence", 0.2)))
+    return _clip01(conf)
+
+def run() -> None:
+    logger = setup_logger("scoring")
+    cfg = load_config()
+
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 이 없습니다. 먼저 event_normalizer를 실행하세요.")
+        return
+
+    df = pd.read_parquet(EVENTS_FILE)
+    if df.empty:
+        logger.info("events.parquet 이 비어있습니다.")
+        return
+
+    wpol = ((cfg.params or {}).get("weights") or {}).get("polarity", {}) or {}
+    wimp = ((cfg.params or {}).get("weights") or {}).get("impact", {}) or {}
+    wconf = ((cfg.params or {}).get("weights") or {}).get("confidence", {}) or {}
+
+    # 결측 컬럼 대비
+    for c in ["title", "summary", "event_type", "salience", "novelty", "published_ts", "feed_name", "source"]:
+        if c not in df.columns:
+            df[c] = "" if c in ("title", "summary", "event_type", "feed_name", "source") else 0.0
+
+    # 계산
+    df["polarity"] = df.apply(lambda r: _polarity(r["title"], r["summary"], wpol), axis=1)              # −1 ~ +1
+    df["impact_strength"] = df.apply(lambda r: _impact(r, wimp), axis=1)                                # 0 ~ 1
+    df["confidence"] = df.apply(lambda r: _confidence(r, wconf), axis=1)                                # 0 ~ 1
+
+    # base_signal: polarity * impact_strength * confidence (−1 ~ +1)
+    df["base_signal"] = df["polarity"] * df["impact_strength"] * df["confidence"]
+    # 안전상 NaN 처리
+    df["base_signal"] = df["base_signal"].fillna(0.0).clip(-1.0, 1.0)
+
+    df.to_parquet(EVENTS_FILE, index=False)
+    logger.info(f"events(updated) -> {EVENTS_FILE} | rows={len(df)} | cols={list(df.columns)}")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\src\signal\signal_builder.py
+==============================
+
+# src/signal/signal_builder.py
+# 목적:
+# - events.parquet( base_signal, polarity, impact_strength, confidence )
+# - rankings.parquet( relevance Top N_R )
+# - rankings_volume.parquet( volume Top N_V )
+# 세 개를 결합해 최종 buy_score(0~1), decision(매수/관망/제외)을 산출
+# 결과는 data/processed/signals.parquet 로 저장
+#
+# 실행:
+#   python -m src.signal.signal_builder
+
+from __future__ import annotations
+import json
+from typing import Dict
+import pandas as pd
+import numpy as np
+
+from src.common.logging import setup_logger
+from src.common.config import load_config
+from src.common.constants import (
+    EVENTS_FILE, PROCESSED_DIR, RANKINGS_FILE
+)
+
+RANKINGS_VOLUME_FILE = PROCESSED_DIR / "rankings_volume.parquet"
+OUT_FILE = PROCESSED_DIR / "signals.parquet"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 유틸
+# ──────────────────────────────────────────────────────────────────────────────
+def _clip01(x: float) -> float:
+    return max(0.0, min(1.0, float(x)))
+
+def _safe(df: pd.DataFrame, col: str, default):
+    if col not in df.columns:
+        df[col] = default
+    return df
+
+def _norm_rank_score(rank_col: pd.Series, max_n: int) -> pd.Series:
+    # 순위(1=최상) → 0~1 점수로 선형 변환: (max_n - rank + 1)/max_n
+    s = (max_n - rank_col + 1) / max_n
+    return s.clip(lower=0.0, upper=1.0)
+
+def _norm_uplift(u: pd.Series) -> pd.Series:
+    # 거래량 uplift는 음수~양수. 양수일수록 +.
+    # 간단 정규화: 0~1 스케일로 매핑 (u<=0 -> 0, u>=1 -> 1)
+    return np.clip(u, 0.0, 1.0)
+
+def _build_reason(row: pd.Series) -> str:
+    pieces = []
+    # 이벤트 요약
+    if isinstance(row.get("event_type"), str) and row.get("event_type"):
+        pieces.append(f"이벤트유형={row['event_type']}")
+    if pd.notna(row.get("published_ts")):
+        pieces.append(f"발생시각(UTC)={str(row['published_ts'])}")
+    # 근거 점수
+    pieces.append(f"base={row.get('base_signal_norm'):.2f}")
+    pieces.append(f"rel={row.get('rel_score'):.2f}(rank={int(row.get('rank_relevance', 0))})")
+    pieces.append(f"vol={row.get('vol_score'):.2f}(uplift={row.get('volume_uplift'):.2f}, z={row.get('abn_volume_z'):.2f})")
+    return " | ".join(pieces)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 메인
+# ──────────────────────────────────────────────────────────────────────────────
+def run() -> None:
+    logger = setup_logger("signal")
+    cfg = load_config()
+
+    # 가중치/임계값
+    wsig = (((cfg.params or {}).get("weights") or {}).get("signal") or {})
+    w_base = float(wsig.get("w_base", 0.50))
+    w_rel  = float(wsig.get("w_rel",  0.30))
+    w_vol  = float(wsig.get("w_vol",  0.20))
+    w_mix  = float(wsig.get("w_mix",  0.00))
+
+    th = ((cfg.params or {}).get("thresholds") or {})
+    thr_buy   = float(th.get("buy_score_buy",   0.70))
+    thr_watch = float(th.get("buy_score_watch", 0.50))
+    require_positive_base = bool(th.get("require_positive_base", True))
+
+    N_R = int((((cfg.params or {}).get("topn") or {}).get("relevance", 10)))
+    N_V = int((((cfg.params or {}).get("topn") or {}).get("volume", 10)))
+
+    # 파일 로드
+    if not EVENTS_FILE.exists():
+        logger.warning("events.parquet 이 없습니다.")
+        return
+    if not RANKINGS_FILE.exists():
+        logger.warning("rankings.parquet(관련도 TopN_R) 이 없습니다.")
+        return
+    if not RANKINGS_VOLUME_FILE.exists():
+        logger.warning("rankings_volume.parquet(거래량 TopN_V) 이 없습니다.")
+        return
+
+    ev  = pd.read_parquet(EVENTS_FILE)
+    rel = pd.read_parquet(RANKINGS_FILE)
+    vol = pd.read_parquet(RANKINGS_VOLUME_FILE)
+
+    if ev.empty or (rel.empty and vol.empty):
+        logger.warning("입력 데이터가 비어 있습니다.")
+        return
+
+    # 필수 컬럼 보정
+    for c, d in [("event_id",""), ("ticker",""), ("base_signal",0.0),
+                 ("published_ts", pd.NaT), ("event_type","")]:
+        ev = _safe(ev, c, d)
+
+    rel = _safe(rel, "rank_relevance", np.nan)
+    rel = _safe(rel, "relevance_score", 0.0)
+
+    # volume 파일 필수 컬럼
+    for c, d in [("rank_volume", np.nan), ("volume_uplift", 0.0), ("abn_volume_z", 0.0)]:
+        vol = _safe(vol, c, d)
+
+    # 결합 키: event_id + ticker (두 축 어디에 있든 outer 방식으로 결합)
+    # 1) 관련도 축
+    rel_k = rel[["event_id","ticker","rank_relevance","relevance_score"]].drop_duplicates()
+    # 2) 거래량 축
+    vol_k = vol[["event_id","ticker","rank_volume","volume_uplift","abn_volume_z"]].drop_duplicates()
+    # 3) 이벤트 메타
+    ev_k  = ev[["event_id","published_ts","event_type","base_signal","title","summary"]].drop_duplicates("event_id")
+
+    base = pd.merge(rel_k, vol_k, on=["event_id","ticker"], how="outer")
+    base = pd.merge(base, ev_k, on="event_id", how="left")
+
+    if base.empty:
+        logger.info("결합 결과가 비어 있습니다. 입력(aliases, 랭킹, 거래량)을 점검하세요.")
+        return
+
+    # 스코어 구성요소 계산
+    # A) base_signal 정규화: -1~+1 → 0~1 (음/양 방향 유지 위해 별도 보관)
+    base["base_signal"] = pd.to_numeric(base["base_signal"], errors="coerce").fillna(0.0)
+    base["base_signal_norm"] = (base["base_signal"] + 1.0) / 2.0  # 0~1
+
+    # B) 관련도 점수(순위 기반)
+    if "rank_relevance" in base.columns and base["rank_relevance"].notna().any():
+        base["rel_score"] = _norm_rank_score(base["rank_relevance"].fillna(N_R + 1), N_R)
+    else:
+        base["rel_score"] = 0.0
+
+    # C) 거래량 점수(uplift 기반)
+    base["vol_score"] = _norm_uplift(pd.to_numeric(base["volume_uplift"], errors="coerce").fillna(0.0))
+
+    # D) 상호작용항(옵션): rel_score * vol_score
+    base["mix_term"] = base["rel_score"] * base["vol_score"]
+
+    # 최종 buy_score
+    base["buy_score_raw"] = (
+        w_base * base["base_signal_norm"] +
+        w_rel  * base["rel_score"] +
+        w_vol  * base["vol_score"] +
+        w_mix  * base["mix_term"]
+    )
+    base["buy_score"] = base["buy_score_raw"].astype(float).apply(_clip01)
+
+    # 의사결정 로직
+    # - base_signal이 음수인데 require_positive_base=True이면 강등
+    decision = []
+    for _, r in base.iterrows():
+        bs = float(r["buy_score"])
+        base_sig = float(r["base_signal"])
+
+        if require_positive_base and base_sig < 0:
+            # 기본 신호가 음수 → 관망 또는 제외
+            if bs >= thr_watch:
+                decision.append("관망")
+            else:
+                decision.append("제외")
+            continue
+
+        if bs >= thr_buy:
+            decision.append("매수")
+        elif bs >= thr_watch:
+            decision.append("관망")
+        else:
+            decision.append("제외")
+    base["decision"] = decision
+
+    # 설명 문자열(근거) 및 메타
+    base["reason"] = base.apply(_build_reason, axis=1)
+
+    # 정렬(우선순위: event_id, buy_score desc)
+    out_cols = [
+        "event_id", "ticker", "buy_score", "decision", "reason",
+        "base_signal", "base_signal_norm",
+        "rank_relevance", "relevance_score",
+        "rank_volume", "volume_uplift", "abn_volume_z",
+        "event_type", "published_ts", "title", "summary"
+    ]
+    out = base[out_cols].sort_values(["event_id", "buy_score"], ascending=[True, False]).reset_index(drop=True)
+
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(OUT_FILE, index=False)
+    logger.info(f"signals -> {OUT_FILE} (rows={len(out)}, events={out['event_id'].nunique()})")
+
+if __name__ == "__main__":
+    run()
+
+
+==============================
+FILE PATH: .\tests\__init__.py
+==============================
+
+
